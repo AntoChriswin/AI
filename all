@@ -794,3 +794,124 @@ count_vowels([H|T], Count) :-
 count_vowels([H|T], Count) :-
     \+ vowel(H),
     count_vowels(T, Count).
+
+
+
+
+bfs prolog
+% Example graph
+edge(a, b, 1).
+edge(b, c, 1).
+edge(b, d, 1).
+edge(c, e, 1).
+edge(d, i, 1).
+edge(e, i, 1).
+
+% Example heuristic (simplified, e.g., distance to 'i')
+heuristic(a, 4).
+heuristic(b, 3).
+heuristic(c, 2).
+heuristic(d, 2).
+heuristic(e, 1).
+heuristic(i, 0).
+
+% Utility predicates for pairs
+map_list_to_pairs(Pred, List, Pairs) :-
+    maplist(call(Pred), List, Values),
+    pairs_keys_values(Pairs, Values, List).
+
+pairs_values(Pairs, Values) :-
+    pairs_keys_values(Pairs, _, Values).
+
+pairs_keys_values([], [], []).
+pairs_keys_values([K-V|KVs], [K|Ks], [V|Vs]) :-
+    pairs_keys_values(KVs, Ks, Vs).
+
+% Best-first search
+best_first_search(Start, Goal, Path) :-
+    best_first([[Start]], Goal, Path).
+
+best_first([[Goal | Path] | _], Goal, [Goal | Path]).
+best_first([CurrentPath | OtherPaths], Goal, Solution) :-
+    CurrentPath = [CurrentNode | _],
+    findall([Next, CurrentNode | CurrentPath],
+        (edge(CurrentNode, Next, _), \+ member(Next, CurrentPath)),
+        NewPaths),
+    sort_by_heuristic(NewPaths, SortedPaths),
+    append(SortedPaths, OtherPaths, UpdatedQueue),
+    best_first(UpdatedQueue, Goal, Solution).
+
+sort_by_heuristic(Paths, SortedPaths) :-
+    map_list_to_pairs(evaluate_path, Paths, Paired),
+    keysort(Paired, SortedPaired),
+    pairs_values(SortedPaired, SortedPaths).
+
+evaluate_path([Node | _], H) :-
+    heuristic(Node, H).
+
+% Main
+main :-
+    best_first_search(a, i, Path),
+    write(Path),
+    halt.
+
+:- initialization(main).
+--------------------------------------------------------------------------------------------
+medical prolog
+% Symptoms and diagnosis rules
+symptom(john, fever).
+symptom(john, cough).
+symptom(john, sore_throat).
+
+disease(john, flu) :-
+    symptom(john, fever),
+    symptom(john, cough),
+    symptom(john, sore_throat).
+
+diagnose(Patient) :-
+    disease(Patient, Disease),
+    format('~w is diagnosed with ~w.~n', [Patient, Disease]).
+
+% Initialization (runs when file is loaded)
+:- initialization(diagnose(john)).
+-------------------------------------------------------------------------------------
+prolog monkey
+% Facts
+on(floor, monkey).
+on(floor, chair).
+in(room, monkey).
+in(room, chair).
+in(room, banana).
+at(ceiling, banana).
+
+strong(monkey).
+grasp(monkey).
+climb(monkey, chair).
+
+push(monkey, chair) :-
+    strong(monkey).
+
+under(banana, chair) :-
+    push(monkey, chair).
+
+canreach(banana, monkey) :-
+    at(floor, banana);
+    at(ceiling, banana),
+    under(banana, chair),
+    climb(monkey, chair).
+
+canget(banana, monkey) :-
+    canreach(banana, monkey),
+    grasp(monkey).
+
+% Initialization: Check if the monkey can get the banana
+:- initialization(main).
+
+main :-
+    ( canget(banana, monkey) ->
+        write('The monkey can get the banana.'), nl
+    ;
+        write('The monkey cannot get the banana.'), nl
+    ),
+    halt.
+
